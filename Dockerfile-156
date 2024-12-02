@@ -54,10 +54,10 @@ RUN apt update -y && apt install -y \
 RUN adduser --system  --home /var/lib/postgresql --no-create-home --shell /bin/bash --group --gecos "PostgreSQL administrator" postgres
 RUN adduser --system  --no-create-home --shell /bin/bash --group  wal-g
 RUN curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install linux \
---init none \
---no-confirm \
---extra-conf "substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com" \
---extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+    --init none \
+    --no-confirm \
+    --extra-conf "substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com" \
+    --extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
 
 ENV PATH="${PATH}:/nix/var/nix/profiles/default/bin"
 
@@ -136,9 +136,9 @@ FROM base as gosu
 ARG TARGETARCH
 # Install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-   gnupg \
-   ca-certificates \
-   && rm -rf /var/lib/apt/lists/*
+    gnupg \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 # Download binary
 ARG GOSU_VERSION=1.16
 ARG GOSU_GPG_KEY=B42F6819007F00F88E364FD4036A9C25BF357DD4
@@ -185,6 +185,12 @@ RUN sed -i \
     usermod -aG postgres wal-g && \
     mkdir -p /etc/postgresql-custom && \
     chown postgres:postgres /etc/postgresql-custom
+
+# Ensure postgresql-platform-defaults.conf is included
+RUN echo "include = '/etc/postgresql-custom/postgresql-platform-defaults.conf'" >> /etc/postgresql/postgresql.conf && \
+    touch /etc/postgresql-custom/postgresql-platform-defaults.conf && \
+    chown postgres:postgres /etc/postgresql-custom/postgresql-platform-defaults.conf && \
+    chmod 644 /etc/postgresql-custom/postgresql-platform-defaults.conf
 
 # # Include schema migrations
 COPY migrations/db /docker-entrypoint-initdb.d/
